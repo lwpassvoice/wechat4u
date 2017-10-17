@@ -181,6 +181,7 @@ bot.on('message', msg => {
   /**
    * 判断消息类型
    */
+  console.log('msg --- ', msg);
   switch (msg.MsgType) {
     case bot.CONF.MSGTYPE_TEXT:
       /**
@@ -194,10 +195,15 @@ bot.on('message', msg => {
        */
       console.log('图片消息，保存到本地')
       bot.getMsgImg(msg.MsgId).then(res => {
-        fs.writeFileSync(`./media/${msg.MsgId}.jpg`, res.data)
+        fs.writeFileSync(`./media/${msg.MsgId}.jpg`, res.data);
       }).catch(err => {
         bot.emit('error', err)
       })
+
+      //上传图片
+      let url = `http://xinao.bubaocloud.com:7224/api/file?Filename=${msg.MsgId}.jpg&dirId=${data.id}-${data.folderId}&source=flashUploader&dataStorageUrl=&Etag=81baa6a0-cca6-6e44-0ebf-684711c8d833-1460360062248&ChunkSize=20971520`;
+      
+
       break
     case bot.CONF.MSGTYPE_VOICE:
       /**
@@ -285,7 +291,14 @@ bot.on('message', msg => {
   if (msg.MsgType == bot.CONF.MSGTYPE_VERIFYMSG) {
     bot.verifyUser(msg.RecommendInfo.UserName, msg.RecommendInfo.Ticket)
       .then(res => {
-        console.log(`通过了 ${bot.Contact.getDisplayName(msg.RecommendInfo)} 好友请求`)
+        console.log(`通过了 ${bot.Contact.getDisplayName(msg.RecommendInfo)} 好友请求`);
+
+        //TODO 发送唯一认证链接
+        console.log('msg.RecommendInfo.UserName ===== ', msg.RecommendInfo.UserName)
+        bot.sendMsg('发送文本消息，可以包含emoji(😒)和QQ表情([坏笑])', msg.RecommendInfo.UserName)
+        .catch(err => {
+          bot.emit('error', err)
+        })
       })
       .catch(err => {
         bot.emit('error', err)
@@ -312,3 +325,58 @@ bot.on('message', msg => {
     bot.emit('error', err)
   })
 })
+
+//普通请求
+function http(options){
+  return new Promise((resolve, reject) => {
+    request(options).then(res => {
+      resolve(res)
+    }).catch(err => {
+      console.log('request failed: ', err);
+      reject(err)
+    })
+  })
+}
+
+
+//发送文件
+function upload(callback) {
+  let boundaryKey = '----' + new Date().getTime();    // 用于标识请求数据段
+  let options = {
+      host: 'localhost', // 远端服务器域名
+      port: 80, // 远端服务器端口号
+      method: 'POST',
+      path: `/upload`, // 上传服务路径
+      headers: {
+          'Content-Type': 'multipart/form-data; boundary=' + boundaryKey,
+          'Connection': 'keep-alive'
+      }
+  };
+  let req = http.request(options).then(res => {
+      res.setEncoding('utf8');
+
+      res.on('data', function(chunk) {
+          console.log('body: ' + chunk);
+      });
+
+      res.on('end', function() {
+          console.log('res end.');
+      });
+  });
+  /*req.write(
+       '--' + boundaryKey + 'rn' +
+       'Content-Disposition: form-data; name="upload"; filename="test.txt"rn' +
+       'Content-Type: text/plain'
+   );*/
+  req.write(
+      `--${boundaryKey}rn Content-Disposition: form-data; name="${self.path}"; filename="${self.file}"rn Content-Type: text/plain`
+  );
+
+  // 创建一个读取操作的数据流
+  let fileStream = fs.createReadStream(this.filePath);
+  fileStream.pipe(req, {end: false});
+  fileStream.on('end', function() {
+      req.end('rn--' + boundaryKey + '--');
+      callback && callback(null);
+  });
+}
