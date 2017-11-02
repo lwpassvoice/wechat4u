@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>身份绑定</title>
+  <script src="//cdn.bootcss.com/jquery/1.12.3/jquery.min.js"></script>
+</head>
+<body>
+  <div>绑定中...</div>
+  <div>绑定成功,可以正常使用机器人了</div>
+  <div>返回值</div>
+  <span id="res"></span>
+</body>
+<script>
+  var request_url = "http://192.168.1.171:8225/";
+  var code = getQueryStringArgs()['code'];
+  var uName = getQueryStringArgs()['uName'];
+
+  $.post({
+    url: request_url + "api/WxRobot/User/Insert",
+    data: {
+      "WxTypeId": 0,
+      "UserName": uName,
+      "Code": "string",
+      "State": ""
+    },
+    success: function(res){
+      $(".res").text(res);
+      console.log('success', res)
+    }
+  })
+
+  function getQueryStringArgs () {
+    // 获取查询字符串参数，去除该字符串问号开关符号
+    var qs=location.search.length>0?location.search.substring(1):"",
+    args={},//存放所有查询字符串参数对
+    items=qs.split("&"),
+    len=items.length,
+    name=null,
+    value=null;
+    if(qs.length==0) {
+      alert("没有查询字符串,提前退行！");
+      return;
+    };
+    for(var i=0;i<len;i++){
+      item=items[i].split("=");
+      name=decodeURIComponent(item[0]);
+      value=decodeURIComponent(item[1]);
+      args[name]=value;
+    }
+    return args;
+  }
+
+</script>
+</html>

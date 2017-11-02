@@ -13,6 +13,8 @@ export function Request (defaults) {
     defaults.headers['connection'] = defaults.headers['connection'] || 'close'
   }
 
+  // defaults.headers['Authorization'] = 'Basic dHh3QGJ1YmFvY2xvdWQuY29tOlpjeXgxNDA2'
+
   defaults.timeout = 1000 * 60
   defaults.httpAgent = false
   defaults.httpsAgent = false

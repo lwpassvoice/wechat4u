@@ -10,7 +10,8 @@
     "clean": "rm -rf lib",
     "unit": "mocha test/unit.js --compilers js:babel-core/register",
     "test": "npm run lint && npm run unit",
-    "core": "cross-env DEBUG=wechat,core node run-core.js"
+    "core": "cross-env DEBUG=wechat,core node run-core.js",
+    "start": "cross-env DEBUG=wechat,core pm2 start run-core.js --merge-logs --log-date-format='YYYY-MM-DD HH:mm Z'"
   },
   "dependencies": {
     "axios": "^0.15.3",

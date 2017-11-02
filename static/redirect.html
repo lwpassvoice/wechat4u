@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>跳转</title>
+</head>
+<body>
+  
+</body>
+<script>
+  var appid = "wxa09e59c44a223510",
+      redirect_uri = "https://api.pricegod.win/#/",
+      scope = "snsapi_userinfo",
+      state = getQueryStringArgs()['uName'],
+      auth_uri = "https://open.weixin.qq.com/connect/oauth2/authorize?appid=" + appid + "&redirect_uri=" + encodeURIComponent(redirect_uri) + "&response_type=code&scope=" + scope + "&state=" + state + "#wechat_redirect";
+  window.location.href = auth_uri;
+
+  function getQueryStringArgs () {
+    // 获取查询字符串参数，去除该字符串问号开关符号
+    var qs=location.search.length>0?location.search.substring(1):"",
+    args={},//存放所有查询字符串参数对
+    items=qs.split("&"),
+    len=items.length,
+    name=null,
+    value=null;
+    if(qs.length==0) {
+      alert("没有查询字符串,提前退行！");
+      return;
+    };
+    for(var i=0;i<len;i++){
+      item=items[i].split("=");
+      name=decodeURIComponent(item[0]);
+      value=decodeURIComponent(item[1]);
+      args[name]=value;
+    }
+    return args;
+  }
+</script>
+</html>

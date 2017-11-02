@@ -5,6 +5,12 @@ const qrcode = require('qrcode-terminal')
 const fs = require('fs')
 const request = require('request')
 
+const bindUserUrl = "http://192.168.1.103:8080/"
+const postUpload = require('./upload.js')
+
+const axios = require('axios')
+const FormData = require('form-data')
+
 let bot
 /**
  * 尝试获取本地登录数据，免扫码
@@ -196,12 +202,30 @@ bot.on('message', msg => {
       console.log('图片消息，保存到本地')
       bot.getMsgImg(msg.MsgId).then(res => {
         fs.writeFileSync(`./media/${msg.MsgId}.jpg`, res.data);
+
+        // let data = {
+
+        // };
+
+        // let blob = new Blob(res.data);
+        postUpload({
+          opt: {
+            
+          },
+          data: res.data
+        }).catch(err => {console.log('err ', err)})
+
+
+
+
+
+
       }).catch(err => {
         bot.emit('error', err)
       })
 
       //上传图片
-      let url = `http://xinao.bubaocloud.com:7224/api/file?Filename=${msg.MsgId}.jpg&dirId=${data.id}-${data.folderId}&source=flashUploader&dataStorageUrl=&Etag=81baa6a0-cca6-6e44-0ebf-684711c8d833-1460360062248&ChunkSize=20971520`;
+      // let url = `http://xinao.bubaocloud.com:7224/api/file?Filename=${msg.MsgId}.jpg&dirId=${data.id}-${data.folderId}&source=flashUploader&dataStorageUrl=&Etag=81baa6a0-cca6-6e44-0ebf-684711c8d833-1460360062248&ChunkSize=20971520`;
       
 
       break
@@ -295,10 +319,11 @@ bot.on('message', msg => {
 
         //TODO 发送唯一认证链接
         console.log('msg.RecommendInfo.UserName ===== ', msg.RecommendInfo.UserName)
-        bot.sendMsg('发送文本消息，可以包含emoji(😒)和QQ表情([坏笑])', msg.RecommendInfo.UserName)
-        .catch(err => {
-          bot.emit('error', err)
-        })
+        //通过好友后，发送认证链接
+        bot.sendMsg(`${bindUserUrl}?uName=${msg.RecommendInfo.UserName}`, msg.RecommendInfo.UserName)
+          .catch(err => {
+            bot.emit('error', err)
+          })
       })
       .catch(err => {
         bot.emit('error', err)

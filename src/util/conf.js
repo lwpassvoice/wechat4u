@@ -221,5 +221,8 @@ export function getCONF (host) {
   conf.API_webwxoplog = origin + '/cgi-bin/mmwebwx-bin/webwxoplog'
   conf.API_checkupload = origin + '/cgi-bin/mmwebwx-bin/webwxcheckupload'
   conf.API_webwxrevokemsg = origin + '/cgi-bin/mmwebwx-bin/webwxrevokemsg'
+
+  let server_base = "http://192.168.1.171:8224"
+  conf.post_uploadRobotFile = server_base + '/api/File/UploadRobotFile'
   return Object.assign(conf, CONF)
 }
