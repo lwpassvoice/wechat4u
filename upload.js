@@ -10,7 +10,7 @@ import {
   getDeviceID
 } from './src/util'
 
-import getApi from './src/5i/config'
+import { getApi, api } from './src/5i/config'
 
 // const request = axios.create({
 //   headers: {
@@ -35,48 +35,115 @@ let headers = {
   'Accept': 'application/json',
   'Accept-Language': 'zh-CN,zh;q=0.8,en-US;q=0.5,en;q=0.3',
   'Accept-Encoding': 'gzip, deflate',
-  'Authorization': 'SessionKey RGAJL5OWEFSUTDRWOKXONZAQIWE0E08QNRATPJSFFA6PABVTJWE1IQPBIF0LMRQG',
+  'Authorization': 'SessionKey SQB6YPAEM1RNMFYJHEQMJCAUPUTEPQWDHCHHT0WYSOANY6OJOEAKYVUODPNPSPDL',
   'Referer': 'http://192.168.1.171:8224/swagger/ui/index',
   'Connection': 'keep-alive',
   'Content-Length': '0'
 }
 
+// Authorization: SessionKey RGAJL5OWEFSUTDRWOKXONZAQIWE0E08QNRATPJSFFA6PABVTJWE1IQPBIF0LMRQG
+
+// SessionKey KCZFRHA20V0QUNZX1QUK3TJA7JIHEFWAXDRCSB1KXJAHBFSD0TF8OKTUXRBXA2WW
+
+
 const request = axios.create({headers});
 
-function getFolder(type){
+function getAuthKey(){
   return new Promise((resolve, reject) => {
     request({
       method: 'GET',
-      uel: getApi(get_filesFolder(type))
+      url: getApi(api.get_filesFolder(type))
     })
     .then(res => {
+      console.log(res)
       resolve(res)
     })
     .catch(err => {
+      console.log(err)
+      reject(err)
+    })
+  })
+}
+
+function getSessionKey(){
+  return new Promise((resolve, reject) => {
+    request({
+      method: 'GET',
+      url: getApi(api.get_filesFolder(type))
+    })
+    .then(res => {
+      console.log(res)
+      resolve(res)
+    })
+    .catch(err => {
+      console.log(err)
+      reject(err)
+    })
+  })
+}
+
+function getFolder(type = 2){
+  return new Promise((resolve, reject) => {
+    request({
+      method: 'GET',
+      url: getApi(api.get_filesFolder(type))
+    })
+    .then(res => {
+      console.log(res)
+      resolve(res)
+    })
+    .catch(err => {
+      console.log(err)
       reject(err)
     })
   })
 }
 
 
-module.exports = function postUpload(options){
-  console.log('upload config ', options.opt)
+function postUploadFile(options){
+  console.log('upload config ', options.opt);
   return new Promise((resolve, reject) => {
     request({
       method: 'POST',
-      url: getApi(post_uploadRobotFile(options.opt)),
+      url: getApi(api.post_fileUploadRobotFile(options.opt)),
       data: options.data
     })
     .then(res => {
-      console.log('res', res)
+      console.log('res', res);
+      resolve(res)
     })
     .catch(err => {
-      console.log('upload fail ', err)
+      console.log('post_fileUploadRobotFile fail ', err)
+      reject(err)
     })
   })
 }
 
-        let url = "http://192.168.1.171:8224/api/File/UploadRobotFile"
+function postUserInsert(data){
+  return new Promise((resolve, reject) => {
+    request({
+      method: "POST",
+      url: getApi(api.post_userInsert()),
+      data
+    })
+    .then(res => {
+      console.log('res', res);
+      resolve(res)
+    })
+    .catch(err => {
+      console.log('post_userInsert fail ', err)
+      reject(err)
+    })
+  })
+}
+
+module.exports = {
+  getFolder,
+  postUploadFile,
+  postUserInsert
+}
+
+/*         let url = "http://192.168.1.171:8224/api/File/UploadRobotFile"
 
         let header = {
           'Host': '192.168.1.171:8224',
@@ -112,4 +179,4 @@ module.exports = function postUpload(options){
         .then((response)=>{
           console.log(response.data)
         })
-        .catch(e=>{console.log(e)})
+        .catch(e=>{console.log(e)}) */

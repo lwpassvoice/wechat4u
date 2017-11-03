@@ -6,10 +6,17 @@ const fs = require('fs')
 const request = require('request')
 
 const bindUserUrl = "http://192.168.1.103:8080/"
-const postUpload = require('./upload.js')
+const uploadService = require('./upload.js')
 
 const axios = require('axios')
 const FormData = require('form-data')
+
+const LRU = require("lru-cache")
+let LRUOptions = {
+  // max: 1000, // 最大cache
+  maxAge: 30 * 24 * 60 * 60 * 1000,
+},
+cache = LRU(LRUOptions);
 
 let bot
 /**
@@ -195,6 +202,17 @@ bot.on('message', msg => {
        */
       console.log(msg.Content)
       break
+    case bot.CONF.MSGTYPE_APP:
+      console.log(msg.MsgType, msg.FileName)
+
+      uploadService.postUserInsert({
+        Type: 0,
+        Url: msg.Url,
+        Text: msg.Content,
+        Title: msg.FileName,
+        FileName: msg.FileName
+      })
+      break
     case bot.CONF.MSGTYPE_IMAGE:
       /**
        * 图片消息
@@ -202,23 +220,30 @@ bot.on('message', msg => {
       console.log('图片消息，保存到本地')
       bot.getMsgImg(msg.MsgId).then(res => {
         fs.writeFileSync(`./media/${msg.MsgId}.jpg`, res.data);
-
+        console.log(res.data);
         // let data = {
 
         // };
 
         // let blob = new Blob(res.data);
-        postUpload({
-          opt: {
-            
-          },
-          data: res.data
-        }).catch(err => {console.log('err ', err)})
+        uploadService.getFolder().then(res => {
+          console.log('文件夹数据', res);
+          let data = res.data;
+          let treeId = data.TreeId,
+              folderId = data.FolderId;
 
-
-
-
-
+          uploadService.postUploadFile({
+            opt: {
+              userId: '', //msg.FromUserName,
+              treeId: treeId,
+              folderId: folderId,
+              fileName: `${msg.MsgId}.jpg`,
+              chunkSize: 5242880,
+              etag: new Date().getTime()
+            },
+            data: res.data
+          }).catch(err => {console.log('err ', err)})
+        })
 
       }).catch(err => {
         bot.emit('error', err)
@@ -319,11 +344,21 @@ bot.on('message', msg => {
 
         //TODO 发送唯一认证链接
         console.log('msg.RecommendInfo.UserName ===== ', msg.RecommendInfo.UserName)
+        
         //通过好友后，发送认证链接
         bot.sendMsg(`${bindUserUrl}?uName=${msg.RecommendInfo.UserName}`, msg.RecommendInfo.UserName)
           .catch(err => {
             bot.emit('error', err)
           })
+
+        cache.set(msg.RecommendInfo.UserName, {
+          userName: msg.RecommendInfo.UserName,
+          sessionKey: "test sessionKey"
+        })
+
+        let testUser = cache.get(msg.RecommendInfo.UserName);
+        console.log('sessionkey & user', testUser)
+
       })
       .catch(err => {
         bot.emit('error', err)
