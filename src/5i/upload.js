@@ -1,35 +1,55 @@
-import axios from 'axios'
-import FormData from 'form-data'
+const axios = require('axios')
+// import FormData from 'form-data'
 
-import {
-  getCONF,
-  Request,
-  isStandardBrowserEnv,
-  assert,
-  getClientMsgId,
-  getDeviceID
-} from '../util'
+// import {
+//   getCONF,
+//   Request,
+//   isStandardBrowserEnv,
+//   assert,
+//   getClientMsgId,
+//   getDeviceID
+// } from '../util'
 
-import { getApi, api } from './config.js'
+// import { getApi, api } from './config.js'
 // import { getSessionKey } from './auth.js'
+
+const getApi = require('./config').getApi
+const api = require('./config').api
 
 const getSessionKey = require('./auth').getSessionKey
 
 const LRU = require("lru-cache");
 
-
-
 let authKeyCache = LRU();
+
+let headers = {
+  'Host': '192.168.1.171:8224',
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:56.0) Gecko/20100101 Firefox/56.0',
+  'Accept': 'application/json',
+  'Accept-Language': 'zh-CN,zh;q=0.8,en-US;q=0.5,en;q=0.3',
+  'Accept-Encoding': 'gzip, deflate',
+  'Authorization': 'SessionKey SQB6YPAEM1RNMFYJHEQMJCAUPUTEPQWDHCHHT0WYSOANY6OJOEAKYVUODPNPSPDL',
+  'Referer': 'http://192.168.1.171:8224/swagger/ui/index',
+  'Connection': 'keep-alive'
+}
+
 
 const request = axios.create();
 request.interceptors.request.use(
   config => {
-    console.log('config', config)
-    if(!authKeyCache.get(global.userName)){
-      config.hearders['sessionKey'] = getSessionKey({
+    // console.log('config', config)
+    console.log('ssKey', getSessionKey({
         wxTypeId: 1,
         userName: global.userName
-      })
+      }), global.userName)
+    if(!authKeyCache.get(global.userName)){
+      let ssKey = getSessionKey({
+        wxTypeId: 1,
+        userName: global.userName
+      });
+      if(typeof ssKey === 'string'){
+        config.hearders['Authorization'] = `SessionKey ${ssKey}`
+      }
     }
   }
 )

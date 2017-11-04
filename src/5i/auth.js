@@ -1,8 +1,12 @@
-import axios from 'axios'
-import { getApi, api } from './config'
+// import axios from 'axios'
+// import { getApi, api } from './config'
 
+const axios = require('axios')
 const LRU = require("lru-cache");
 const crypto = require('crypto');
+
+const getApi = require('./config').getApi
+const api = require('./config').api
 
 let authKeyOptions = {
   maxAge: 60 * 60 * 1000  // 1 hour
@@ -55,7 +59,7 @@ function getAuthKey(optionss){
 }
 
 function getSessionKey(options){
-  return new Promise((resolve, reject) => {
+/*   return new Promise((resolve, reject) => {
     request({
       method: 'GET',
       url: getApi(api.get_sessionKey(options))
@@ -68,6 +72,18 @@ function getSessionKey(options){
       console.log(err)
       reject(err)
     })
+  }) */
+
+  request({
+    method: 'GET',
+    url: getApi(api.get_sessionKey(options))
+  })
+  .then(res => {
+    console.log('getSessionKey res', res);
+    return res
+  })
+  .catch(err => {
+    console.log('getSessionKey err', err)
   })
 }
 

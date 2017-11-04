@@ -75,6 +75,7 @@ bot.on('logout', () => {
 bot.on('contacts-updated', contacts => {
   console.log(contacts)
   console.log('联系人数量：', Object.keys(bot.contacts).length)
+  console.log('联系人：', bot.contacts)
 })
 /**
  * 错误事件，参数一般为Error对象
@@ -219,13 +220,13 @@ bot.on('message', msg => {
     case bot.CONF.MSGTYPE_APP:
       console.log(msg.MsgType, msg.FileName)
 
-      uploadService.postUserInsert({
+/*       uploadService.postUserInsert({
         Type: 0,
         Url: msg.Url,
         Text: msg.Content,
         Title: msg.FileName,
         FileName: msg.FileName
-      })
+      }) */
       break
     case bot.CONF.MSGTYPE_IMAGE:
       /**
