@@ -6,7 +6,8 @@ const fs = require('fs')
 const request = require('request')
 
 const bindUserUrl = "http://192.168.1.103:8080/"
-const uploadService = require('./upload.js')
+const uploadService = require('./src/5i/upload.js')
+const authService = require('./src/5i/auth.js')
 
 const axios = require('axios')
 const FormData = require('form-data')
@@ -183,6 +184,19 @@ bot.on('login', () => {
  * 如何处理会话消息
  */
 bot.on('message', msg => {
+  let fromUserInfo = {
+    userName: msg.FromUserName
+  }
+
+  global.userName = msg.FromUserName
+/* 
+  if(!cache.get(msg.FromUserName).sessionKey){
+    authService.getSessionKey({
+      wxTypeId: 1,
+      userName: msg.RecommendInfo.UserName
+    })
+  } */
+
   /**
    * 获取消息时间
    */
@@ -220,7 +234,7 @@ bot.on('message', msg => {
       console.log('图片消息，保存到本地')
       bot.getMsgImg(msg.MsgId).then(res => {
         fs.writeFileSync(`./media/${msg.MsgId}.jpg`, res.data);
-        console.log(res.data);
+        // console.log(res.data);
         // let data = {
 
         // };
@@ -248,11 +262,7 @@ bot.on('message', msg => {
       }).catch(err => {
         bot.emit('error', err)
       })
-
-      //上传图片
-      // let url = `http://xinao.bubaocloud.com:7224/api/file?Filename=${msg.MsgId}.jpg&dirId=${data.id}-${data.folderId}&source=flashUploader&dataStorageUrl=&Etag=81baa6a0-cca6-6e44-0ebf-684711c8d833-1460360062248&ChunkSize=20971520`;
       
-
       break
     case bot.CONF.MSGTYPE_VOICE:
       /**
@@ -353,7 +363,10 @@ bot.on('message', msg => {
 
         cache.set(msg.RecommendInfo.UserName, {
           userName: msg.RecommendInfo.UserName,
-          sessionKey: "test sessionKey"
+          sessionKey: authService.getSessionKey({
+            wxTypeId: 1,
+            userName: msg.RecommendInfo.UserName
+          })
         })
 
         let testUser = cache.get(msg.RecommendInfo.UserName);

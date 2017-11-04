@@ -8,79 +8,55 @@ import {
   assert,
   getClientMsgId,
   getDeviceID
-} from './src/util'
+} from '../util'
 
-import { getApi, api } from './src/5i/config'
+import { getApi, api } from './config.js'
+// import { getSessionKey } from './auth.js'
 
-// const request = axios.create({
-//   headers: {
-//     'Accept': 'application/json, text/plain, */*',
-//     'Accept-Encoding': 'gzip, deflate, br',
-//     'Accept-Language': 'zh-CN,zh;q=0.8',
-//     'Authorization': 'Basic dHh3QGJ1YmFvY2xvdWQuY29tOlpjeXgxNDA2',
-//     'Connection': 'keep-alive',
-//     'Content-Length': '40521',
-//     'Content-Range': 'bytes 0-40328/40329',
-//     'Content-Type': 'multipart/form-data; boundary=----WebKitFormBoundaryggq8tyXHuYRpjjEF',
-//     'Host': 'staging.bubaocloud.com:8224',
-//     'Origin': 'https://staging.bubaocloud.com',
-//     'Referer': 'https://staging.bubaocloud.com/files/folder/107/374',
-//     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36'
-//   }
-// })
+const getSessionKey = require('./auth').getSessionKey
 
-let headers = {
-  'Host': '192.168.1.171:8224',
-  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:56.0) Gecko/20100101 Firefox/56.0',
-  'Accept': 'application/json',
-  'Accept-Language': 'zh-CN,zh;q=0.8,en-US;q=0.5,en;q=0.3',
-  'Accept-Encoding': 'gzip, deflate',
-  'Authorization': 'SessionKey SQB6YPAEM1RNMFYJHEQMJCAUPUTEPQWDHCHHT0WYSOANY6OJOEAKYVUODPNPSPDL',
-  'Referer': 'http://192.168.1.171:8224/swagger/ui/index',
-  'Connection': 'keep-alive',
-  'Content-Length': '0'
-}
+const LRU = require("lru-cache");
+
+
+
+let authKeyCache = LRU();
+
+const request = axios.create();
+request.interceptors.request.use(
+  config => {
+    console.log('config', config)
+    if(!authKeyCache.get(global.userName)){
+      config.hearders['sessionKey'] = getSessionKey({
+        wxTypeId: 1,
+        userName: global.userName
+      })
+    }
+  }
+)
+
+
+
+
+
+// let headers = {
+//   'Host': '192.168.1.171:8224',
+//   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:56.0) Gecko/20100101 Firefox/56.0',
+//   'Accept': 'application/json',
+//   'Accept-Language': 'zh-CN,zh;q=0.8,en-US;q=0.5,en;q=0.3',
+//   'Accept-Encoding': 'gzip, deflate',
+//   'Authorization': 'SessionKey SQB6YPAEM1RNMFYJHEQMJCAUPUTEPQWDHCHHT0WYSOANY6OJOEAKYVUODPNPSPDL',
+//   'Referer': 'http://192.168.1.171:8224/swagger/ui/index',
+//   'Connection': 'keep-alive',
+//   'Content-Length': '0'
+// }
 
 // Authorization: SessionKey RGAJL5OWEFSUTDRWOKXONZAQIWE0E08QNRATPJSFFA6PABVTJWE1IQPBIF0LMRQG
 
 // SessionKey KCZFRHA20V0QUNZX1QUK3TJA7JIHEFWAXDRCSB1KXJAHBFSD0TF8OKTUXRBXA2WW
 
 
-const request = axios.create({headers});
+// const request = axios.create({headers});
 
-function getAuthKey(){
-  return new Promise((resolve, reject) => {
-    request({
-      method: 'GET',
-      url: getApi(api.get_filesFolder(type))
-    })
-    .then(res => {
-      console.log(res)
-      resolve(res)
-    })
-    .catch(err => {
-      console.log(err)
-      reject(err)
-    })
-  })
-}
-
-function getSessionKey(){
-  return new Promise((resolve, reject) => {
-    request({
-      method: 'GET',
-      url: getApi(api.get_filesFolder(type))
-    })
-    .then(res => {
-      console.log(res)
-      resolve(res)
-    })
-    .catch(err => {
-      console.log(err)
-      reject(err)
-    })
-  })
-}
 
 function getFolder(type = 2){
   return new Promise((resolve, reject) => {

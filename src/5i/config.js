@@ -24,8 +24,8 @@ export const api = {
     return `/api/Company/${opt.appId}/noncestr/${opt.noncestr}/sign/${opt.sign}`
   },
 
-  get_sessionKey: (opt) => {
-    return `/api/SessionKey/Get`
+  get_sessionKey: () => {
+    return `/api/WxRobot/SessionKey?wxTypeId=${opt.wxTypeId}&userName=${opt.userName}`
   }
 }
 
