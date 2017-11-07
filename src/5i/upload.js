@@ -129,7 +129,7 @@ function checkSessionKey(){
   })
 }
 
-function getFolder(type = 2){
+function getFolder(type = 10){
   return new Promise((resolve, reject) => {
     checkSessionKey().then(() => {
       request({

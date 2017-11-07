@@ -206,14 +206,15 @@ bot.on('message', msg => {
         userName: msg.RecommendInfo.UserName
       })
     } */
-
-  redisClient.redis_sismember('userList', bot.contacts[msg.FromUserName].getDisplayName()).then(res => {
-    console.log('redis 1 ', res);
-    if (res) {
-      global.userName = bot.contacts[msg.FromUserName].getDisplayName();
-    }
-  })
-  .then(() => console.log('global.userName', global.userName))
+  if (msg.MsgType !== bot.CONF.MSGTYPE_VERIFYMSG) {
+    redisClient.redis_sismember('userList', bot.contacts[msg.FromUserName].getDisplayName()).then(res => {
+      console.log('redis 1 ', res);
+      if (res) {
+        global.userName = bot.contacts[msg.FromUserName].getDisplayName();
+      }
+    })
+    .then(() => console.log('global.userName', global.userName))
+  }
 
   /**
    * 获取消息时间
@@ -308,7 +309,7 @@ bot.on('message', msg => {
         // console.log(res.data);
 
         uploadService.getFolder().then(resp => {
-          console.log('保存到的文件夹信息', res);
+          console.log('保存到的文件夹信息', resp);
           let data = resp.data;
           let treeId = data.TreeId,
             folderId = data.FolderId;
@@ -344,7 +345,7 @@ bot.on('message', msg => {
         fs.writeFileSync(`./media/${msg.MsgId}.mp3`, res.data)
 
         uploadService.getFolder().then(resp => {
-          console.log('保存到的文件夹信息', res);
+          console.log('保存到的文件夹信息', resp);
           let data = resp.data;
           let treeId = data.TreeId,
             folderId = data.FolderId;
@@ -392,7 +393,7 @@ bot.on('message', msg => {
         // fs.writeFileSync(`./media/${msg.MsgId}.mp4`, res.data);
 
         uploadService.getFolder().then(resp => {
-          console.log('保存到的文件夹信息', res);
+          console.log('保存到的文件夹信息', resp);
           let data = resp.data;
           let treeId = data.TreeId,
             folderId = data.FolderId;
@@ -480,10 +481,11 @@ bot.on('message', msg => {
         // let displayName = bot.contacts[msg.RecommendInfo.UserName].getDisplayName();
         // console.log('disp name', displayName);
 
-        console.log('bot.contacts', bot.contacts);
+        // console.log('bot.contacts', bot.contacts);
 
-        redisClient.redis_sismember('userList', bot.contacts[msg.RecommendInfo.UserName].getDisplayName())
+        redisClient.redis_sismember('userList', bot.Contact.getDisplayName(msg.RecommendInfo))
           .then(resp => {
+            console.log('redis_sismember userList', resp);
             if (!resp) {
               console.log('没找到')
               let remarkName = authService.createRemarkName(); //'@bbc_' + 
@@ -569,13 +571,13 @@ bot.on('message', msg => {
 /**
  * 如何直接转发消息
  */
-bot.on('message', msg => {
+/* bot.on('message', msg => {
   // 不是所有消息都可以直接转发
   bot.forwardMsg(msg, 'filehelper')
     .catch(err => {
       bot.emit('error', err)
     })
-})
+}) */
 /**
  * 如何获取联系人头像
  */
