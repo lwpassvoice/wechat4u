@@ -106,8 +106,8 @@ function checkSessionKey(){
       if(!res || !res['SessionKey']){
         console.log('no sessionkey')
         getSessionKey({
-          wxTypeId: 1,
-          userName: 'cd74cdb0-c2b6-11e7-9ce4-793c1af45c49' //global.userName
+          wxTypeId: 4,
+          userName: global.userName //'cd74cdb0-c2b6-11e7-9ce4-793c1af45c49'
         })
         .then(key => {
           console.log('sessionkey', key)

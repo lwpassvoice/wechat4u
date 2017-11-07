@@ -1,7 +1,7 @@
 const redis = require("redis"),
     client = redis.createClient(6379,"127.0.0.1");
 
-function redis_set(key, value){
+function redis_set(key, value, expire){
 	return new Promise((resolve, reject) => {
 		client.set(key, value, function (err, response) {
 		    if (err) {
@@ -9,7 +9,9 @@ function redis_set(key, value){
 		        reject(err)
 		    } else {
             console.log(response);
-
+            if(expire){
+              client.expire(key, expire)
+            }
             resolve(response)
 		    }
 		});
@@ -26,16 +28,6 @@ function redis_get(key){
 		    } else {
             console.log(response);
             resolve(response)
-/* 		        client.get('key001', function (err, res) {
-		            if (err) {
-		                console.log("err:", err);
-		                reject(err)
-		            } else {
-		                console.log(res);
-		                resolve(res)
-		                client.end();
-		            }
-		        }); */
 		    }
 		});
 	})
