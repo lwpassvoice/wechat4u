@@ -8,6 +8,12 @@ const base = {
   rest: "https://wx-rest.bubaocloud.com"
 }
 
+export const bindUserUrl = "https://wx-web.bubaocloud.com/bind/";
+export const redis_config = {
+  host: '127.0.0.1',
+  port: 6379
+};
+
 let host = base.rest;
 
 export const api = {
@@ -18,7 +24,6 @@ export const api = {
 
   post_fileUploadRobotFile: (opt) => {
     host = base.storage;
-    // return `/api/File/UploadRobotFile?treeId=${opt.treeId}&fileName=${opt.fileName}&chunkSize=${opt.chunkSize}`
     return `/api/File?dirId=${opt.treeId}-${opt.folderId}&fileName=${opt.fileName}&chunkSize=${opt.chunkSize}&etag=${opt.etag}`
   },
 
@@ -40,4 +45,5 @@ export function getApi(uri){
   host = base.rest;
   return url
 }
+
 

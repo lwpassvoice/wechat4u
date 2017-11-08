@@ -1,23 +1,9 @@
-// import axios from 'axios'
-// import { getApi, api } from './config'
-
 const axios = require('axios')
-// const LRU = require("lru-cache");
 const crypto = require('crypto');
 const uuidV1 = require('uuid/v1');
 
 const getApi = require('./config').getApi
 const api = require('./config').api
-
-// let authKeyOptions = {
-//   maxAge: 60 * 60 * 1000  // 1 hour
-// },
-// authKeyCache = LRU(authKeyOptions);
-
-// let sskeyOptions = {
-//   maxAge: 7 * 60 * 60 * 1000 // 7 hour
-// },
-// sskeyCache = LRU(sskeyCache);
 
 const redisClient = require('./redisCommand.js')
 
@@ -130,18 +116,6 @@ function getSessionKey(options){
       })
     })
   })
-
-/*   request({
-    method: 'GET',
-    url: getApi(api.get_sessionKey(options))
-  })
-  .then(res => {
-    console.log('getSessionKey res', res);
-    return res
-  })
-  .catch(err => {
-    console.log('getSessionKey err', err)
-  }) */
 }
 
 module.exports = {

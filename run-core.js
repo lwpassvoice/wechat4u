@@ -1,27 +1,15 @@
 'use strict'
+const axios = require('axios')
 require('babel-register')
 const Wechat = require('./src/wechat.js')
 const qrcode = require('qrcode-terminal')
 const fs = require('fs')
 const request = require('request')
-// const redis = require('redis')
 
-const bindUserUrl = "https://wx-web.bubaocloud.com/bind/"
+const bindUserUrl = require('./src/5i/config.js').bindUserUrl
 
 const uploadService = require('./src/5i/upload.js')
 const authService = require('./src/5i/auth.js')
-
-const axios = require('axios')
-const FormData = require('form-data')
-
-/* const LRU = require("lru-cache")
-let LRUOptions = {
-  // max: 1000, // 最大cache
-  maxAge: 30 * 24 * 60 * 60 * 1000,
-},
-cache = LRU(LRUOptions); */
-
-// let redisClient = redis.createClient(6380,"117.121.25.228",{});
 const redisClient = require('./src/5i/redisCommand.js')
 
 let bot
@@ -62,9 +50,15 @@ bot.on('user-avatar', avatar => {
  * 登录成功事件
  */
 bot.on('login', () => {
+  let ToUserName = 'filehelper';
   console.log('登录成功')
   // 保存数据，将数据序列化之后保存到任意位置
-  fs.writeFileSync('./sync-data.json', JSON.stringify(bot.botData))
+  fs.writeFileSync('./sync-data.json', JSON.stringify(bot.botData));
+
+  bot.sendMsg(new Date().toString() + ': 登陆成功', ToUserName)
+    .catch(err => {
+      bot.emit('error', err)
+    })
 })
 /**
  * 登出成功事件
@@ -80,7 +74,7 @@ bot.on('logout', () => {
 bot.on('contacts-updated', contacts => {
   // console.log(contacts)
   console.log('联系人数量：', Object.keys(bot.contacts).length)
-  // console.log('联系人：', bot.contacts)
+  console.log('联系人：', bot.contacts)
 })
 /**
  * 错误事件，参数一般为Error对象
@@ -91,7 +85,8 @@ bot.on('error', err => {
 /**
  * 如何发送消息
  */
-bot.on('login', () => {
+// 取消在登录时发送消息
+bot.on('login1', () => {
   /**
    * 演示发送消息到文件传输助手
    * 通常回复消息时可以用 msg.FromUserName
@@ -190,27 +185,25 @@ bot.on('login', () => {
  * 如何处理会话消息
  */
 bot.on('message', msg => {
-  let fromUserInfo = {
-    // userName: cache.get(bot.contacts[msg.FromUserName].getDisplayName())
-  }
+  global.userName = '';
 
-  // global.userName = cache.get(bot.contacts[msg.FromUserName].getDisplayName());
-
-  // console.log('createRemarkName ', authService.createRemarkName());
-
-  // console.log('global userName', global.userName, cache.get(bot.contacts[msg.FromUserName].getDisplayName()));
-  /* 
-    if(!cache.get(msg.FromUserName).sessionKey){
-      authService.getSessionKey({
-        wxTypeId: 1,
-        userName: msg.RecommendInfo.UserName
-      })
-    } */
   if (msg.MsgType !== bot.CONF.MSGTYPE_VERIFYMSG) {
     redisClient.redis_sismember('userList', bot.contacts[msg.FromUserName].getDisplayName()).then(res => {
       console.log('redis 1 ', res);
       if (res) {
         global.userName = bot.contacts[msg.FromUserName].getDisplayName();
+      }else{
+/*         let remarkName = authService.createRemarkName();
+        bot.updateRemarkName(msg.FromUserName, remarkName)
+          .then(() => {
+            //通过好友后，发送认证链接
+            bot.sendMsg(`点击链接绑定 https://open.weixin.qq.com/connect/oauth2/authorize?appid=wx51ded49ab9139e21&redirect_uri=${encodeURIComponent(bindUserUrl)}${remarkName}&response_type=code&scope=snsapi_userinfo&state=STATE#wechat_redirect`, msg.FromUserName)
+              .catch(err => {
+                bot.emit('error', err)
+              })
+            
+            redisClient.redis_sadd('userList', remarkName);
+          }) */
       }
     })
     .then(() => console.log('global.userName', global.userName))
@@ -219,13 +212,11 @@ bot.on('message', msg => {
   /**
    * 获取消息时间
    */
-  console.log(`----------${msg.getDisplayTime()}----------`)
-
-  // console.log("cd74cdb0-c2b6-11e7-9ce4-793c1af45c49", cache.get('cd74cdb0-c2b6-11e7-9ce4-793c1af45c49'))
+  console.log(`----------${new Date().toString(), msg.getDisplayTime()}----------`)
   /**
    * 获取消息发送者的显示名
    */
-  console.log(bot.contacts[msg.FromUserName].getDisplayName())
+  console.log("来自: ", bot.contacts[msg.FromUserName].getDisplayName(), "类型: ", msg.MsgType)
   /**
    * 判断消息类型
    */
@@ -245,8 +236,13 @@ bot.on('message', msg => {
           FileName: msg.Content
         })
         .then(() => {
+          console.log('链接保存成功！',`${msg.Content}`, bot.contacts[msg.FromUserName].getDisplayName());
           bot.sendMsg("链接保存成功！", msg.FromUserName)
         })
+      }
+
+      if(/^(testFind)$/.test(msg.Content)){
+        console.log('testFind', )
       }
       break
     case bot.CONF.MSGTYPE_APP:
@@ -261,12 +257,13 @@ bot.on('message', msg => {
             FileName: msg.FileName
           })
           .then(() => {
+            console.log('分享保存成功！',`${msg.FileName}`, bot.contacts[msg.FromUserName].getDisplayName());
             bot.sendMsg("分享保存成功！", msg.FromUserName)
           })
           break;
         case bot.CONF.APPMSGTYPE_ATTACH:
           bot.getDoc(msg.FromUserName, msg.MediaId, msg.FileName).then(res => {
-            fs.writeFileSync(`./media/${msg.FileName}`, res.data)
+            // fs.writeFileSync(`./media/${msg.FileName}`, res.data)
 
             uploadService.getFolder().then(resp => {
                 console.log('保存到的文件夹信息', resp);
@@ -286,6 +283,7 @@ bot.on('message', msg => {
                   data: res.data
                 })
                 .then(() => {
+                  console.log('文件保存成功！',`${msg.FileName}`, bot.contacts[msg.FromUserName].getDisplayName());
                   bot.sendMsg("文件保存成功！", msg.FromUserName)
                 })
                 .catch(err => { console.log('err ', err) })
@@ -326,6 +324,7 @@ bot.on('message', msg => {
             data: res.data
           })
           .then(() => {
+            console.log('图片保存成功！',`${msg.MsgId}.jpg`, bot.contacts[msg.FromUserName].getDisplayName());
             bot.sendMsg("图片保存成功！", msg.FromUserName)
           })
           .catch(err => { console.log('err ', err) })
@@ -342,7 +341,7 @@ bot.on('message', msg => {
        */
       console.log('语音消息，保存到本地')
       bot.getVoice(msg.MsgId).then(res => {
-        fs.writeFileSync(`./media/${msg.MsgId}.mp3`, res.data)
+        // fs.writeFileSync(`./media/${msg.MsgId}.mp3`, res.data)
 
         uploadService.getFolder().then(resp => {
           console.log('保存到的文件夹信息', resp);
@@ -362,7 +361,7 @@ bot.on('message', msg => {
             data: res.data
           })
           .then(() => {
-            console.log('语音保存成功',`${msg.MsgId}.mp3`, msg.FromUserName);
+            console.log('语音保存成功',`${msg.MsgId}.mp3`, bot.contacts[msg.FromUserName].getDisplayName());
             bot.sendMsg("语音保存成功！", msg.FromUserName)
           })
           .catch(err => { console.log('err ', err) })
@@ -378,7 +377,7 @@ bot.on('message', msg => {
        */
       console.log('表情消息，保存到本地')
       bot.getMsgImg(msg.MsgId).then(res => {
-        fs.writeFileSync(`./media/${msg.MsgId}.gif`, res.data)
+        // fs.writeFileSync(`./media/${msg.MsgId}.gif`, res.data)
       }).catch(err => {
         bot.emit('error', err)
       })
@@ -410,7 +409,7 @@ bot.on('message', msg => {
             data: res.data
           })
           .then(() => {
-            console.log('视频保存成功',`${msg.MsgId}.mp4`, msg.FromUserName);
+            console.log('视频保存成功',`${msg.MsgId}.mp4`, bot.contacts[msg.FromUserName].getDisplayName());
             bot.sendMsg("视频保存成功！", msg.FromUserName)
           })
           .catch(err => { console.log('err ', err) })
@@ -469,26 +468,20 @@ bot.on('message', msg => {
  * 如何处理好友请求消息
  */
 bot.on('message', msg => {
-  if (msg.MsgType == bot.CONF.MSGTYPE_VERIFYMSG) {
+  if (msg.MsgType === bot.CONF.MSGTYPE_VERIFYMSG) {
     bot.verifyUser(msg.RecommendInfo.UserName, msg.RecommendInfo.Ticket)
       .then(res => {
         console.log(`通过了 ${bot.Contact.getDisplayName(msg.RecommendInfo)} 好友请求`);
 
-        //TODO 发送唯一认证链接
+        //发送唯一认证链接
         console.log('msg.RecommendInfo.UserName ===== ', msg.RecommendInfo.UserName);
-        // console.log('cache.get ', cache.get(bot.contacts[msg.RecommendInfo.UserName].getDisplayName()));
-
-        // let displayName = bot.contacts[msg.RecommendInfo.UserName].getDisplayName();
-        // console.log('disp name', displayName);
-
-        // console.log('bot.contacts', bot.contacts);
 
         redisClient.redis_sismember('userList', bot.Contact.getDisplayName(msg.RecommendInfo))
           .then(resp => {
             console.log('redis_sismember userList', resp);
             if (!resp) {
               console.log('没找到')
-              let remarkName = authService.createRemarkName(); //'@bbc_' + 
+              let remarkName = authService.createRemarkName();
               console.log('remarkName ', remarkName);
 
               bot.updateRemarkName(msg.RecommendInfo.UserName, remarkName)
@@ -500,22 +493,6 @@ bot.on('message', msg => {
                     })
                   
                   redisClient.redis_sadd('userList', remarkName);
-
-/*                   setTimeout(() => {
-                    redisClient.redis_hmset(remarkName, {
-                      userName: remarkName,
-                      sessionKey: authService.getSessionKey({
-                        wxTypeId: 1,
-                        userName: remarkName
-                      })
-                    }, 100000) //最长108000s
-                      .then(res => {
-                        console.log('redis_hmset', res)
-                        redisClient.redis_hgetall(remarkName).then(res => {
-                          console.log('redis remark redis_hgetall ', res);
-                        })
-                      })
-                  }, 10000) */
                 })
             } else {
               redisClient.redis_hgetall(bot.contacts[msg.RecommendInfo.UserName].getDisplayName()).then(res => {
@@ -523,45 +500,6 @@ bot.on('message', msg => {
               })
             }
         })
-
-/*     redisClient.redis_hgetall(bot.contacts[msg.RecommendInfo.UserName].getDisplayName())
-      .then(res => {
-        console.log('找用户', res)
-        if (!res) {
-          console.log('123')
-          let remarkName = authService.createRemarkName(); //'@bbc_' + 
-          console.log('remarkName ', remarkName);
-
-          bot.updateRemarkName(msg.RecommendInfo.UserName, remarkName)
-            .then(() => {
-              //通过好友后，发送认证链接
-              bot.sendMsg(`${bindUserUrl}?uName=${remarkName}`, msg.RecommendInfo.UserName)
-                .catch(err => {
-                  bot.emit('error', err)
-                })
-
-              redisClient.redis_hmset(remarkName, {
-                userName: remarkName,
-                sessionKey: authService.getSessionKey({
-                  wxTypeId: 1,
-                  userName: remarkName
-                })
-              }, 100000) //最长108000s
-                .then(res => {
-                  console.log('redis_hmset', res)
-                  redisClient.redis_hgetall(remarkName).then(res => {
-                    console.log('redis remark redis_hgetall ', res);
-                  })
-                })
-
-              redisClient.redis_sadd('userList', remarkName)
-            })
-        } else {
-          redisClient.redis_hgetall(bot.contacts[msg.RecommendInfo.UserName].getDisplayName()).then(res => {
-            console.log("用户再次添加好友 ", res)
-          })
-        }
-      }) */
   })
   .catch(err => {
     bot.emit('error', err)
@@ -583,63 +521,10 @@ bot.on('message', msg => {
  */
 bot.on('message', msg => {
   bot.getHeadImg(bot.contacts[msg.FromUserName].HeadImgUrl).then(res => {
-    fs.writeFileSync(`./media/${msg.FromUserName}.jpg`, res.data)
+    // fs.writeFileSync(`./media/${msg.FromUserName}.jpg`, res.data)
   }).catch(err => {
     bot.emit('error', err)
   })
 })
 
-//普通请求
-function http(options) {
-  return new Promise((resolve, reject) => {
-    request(options).then(res => {
-      resolve(res)
-    }).catch(err => {
-      console.log('request failed: ', err);
-      reject(err)
-    })
-  })
-}
 
-
-//发送文件
-function upload(callback) {
-  let boundaryKey = '----' + new Date().getTime();    // 用于标识请求数据段
-  let options = {
-    host: 'localhost', // 远端服务器域名
-    port: 80, // 远端服务器端口号
-    method: 'POST',
-    path: `/upload`, // 上传服务路径
-    headers: {
-      'Content-Type': 'multipart/form-data; boundary=' + boundaryKey,
-      'Connection': 'keep-alive'
-    }
-  };
-  let req = http.request(options).then(res => {
-    res.setEncoding('utf8');
-
-    res.on('data', function (chunk) {
-      console.log('body: ' + chunk);
-    });
-
-    res.on('end', function () {
-      console.log('res end.');
-    });
-  });
-  /*req.write(
-       '--' + boundaryKey + 'rn' +
-       'Content-Disposition: form-data; name="upload"; filename="test.txt"rn' +
-       'Content-Type: text/plain'
-   );*/
-  req.write(
-    `--${boundaryKey}rn Content-Disposition: form-data; name="${self.path}"; filename="${self.file}"rn Content-Type: text/plain`
-  );
-
-  // 创建一个读取操作的数据流
-  let fileStream = fs.createReadStream(this.filePath);
-  fileStream.pipe(req, { end: false });
-  fileStream.on('end', function () {
-    req.end('rn--' + boundaryKey + '--');
-    callback && callback(null);
-  });
-}
