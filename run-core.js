@@ -59,6 +59,8 @@ bot.on('login', () => {
     .catch(err => {
       bot.emit('error', err)
     })
+
+  require('./src/5i/userService')
 })
 /**
  * 登出成功事件
@@ -75,6 +77,9 @@ bot.on('contacts-updated', contacts => {
   // console.log(contacts)
   console.log('联系人数量：', Object.keys(bot.contacts).length)
   console.log('联系人：', bot.contacts)
+  for(let friend of bot.friendList){
+    redisClient.client.hmset('remarkToUser', friend.nickname, friend.username)
+  }
 })
 /**
  * 错误事件，参数一般为Error对象
@@ -185,14 +190,17 @@ bot.on('login1', () => {
  * 如何处理会话消息
  */
 bot.on('message', msg => {
-  global.userName = '';
+  let userId; //等同于userName
 
+  //消息类型非申请好友
   if (msg.MsgType !== bot.CONF.MSGTYPE_VERIFYMSG) {
-    redisClient.redis_sismember('userList', bot.contacts[msg.FromUserName].getDisplayName()).then(res => {
-      console.log('redis 1 ', res);
-      if (res) {
-        global.userName = bot.contacts[msg.FromUserName].getDisplayName();
-      }else{
+    userId = bot.contacts[msg.FromUserName].getDisplayName();
+
+    // redisClient.redis_sismember('userList', userId).then(res => {
+      // console.log('redis ishas ', res, userId);
+      // if (res) {
+        // global.userName = bot.contacts[msg.FromUserName].getDisplayName();
+      // }else{
 /*         let remarkName = authService.createRemarkName();
         bot.updateRemarkName(msg.FromUserName, remarkName)
           .then(() => {
@@ -204,31 +212,30 @@ bot.on('message', msg => {
             
             redisClient.redis_sadd('userList', remarkName);
           }) */
-      }
-    })
-    .then(() => console.log('global.userName', global.userName))
+      // }
+    // })
   }
 
   /**
    * 获取消息时间
    */
-  console.log(`----------${new Date().toString(), msg.getDisplayTime()}----------`)
+  console.log(`----------${new Date().toString()}----------`)
   /**
    * 获取消息发送者的显示名
    */
-  console.log("来自: ", bot.contacts[msg.FromUserName].getDisplayName(), "类型: ", msg.MsgType)
+  console.log("新消息来自: ", bot.contacts[msg.FromUserName].getDisplayName(), "类型: ", msg.MsgType)
   /**
    * 判断消息类型
    */
-  console.log('msg --- ', msg);
+  // console.log('msg --- ', msg);
   switch (msg.MsgType) {
     case bot.CONF.MSGTYPE_TEXT:
       /**
        * 文本消息
        */
-      console.log(msg.Content);
+      // console.log(msg.Content);
       if(/^(http)/.test(msg.Content)){
-        uploadService.postUserInsert({
+        uploadService.postUserInsert(userId, {
           Type: 0,
           Url: msg.Content,
           Text: msg.Content,
@@ -242,14 +249,31 @@ bot.on('message', msg => {
       }
 
       if(/^(testFind)$/.test(msg.Content)){
-        console.log('testFind', )
+        console.log('testFind', bot.friendList);
+/*         redisClient.redis_hmset('friendList', bot.friendList).then(res => {
+          redisClient.redis_sismember()
+        }) */
+        for(let friend of bot.friendList){
+          redisClient.client.hmset('remarkToUser', friend.nickname, friend.username)
+        }
+      }
+
+      if(/^(getfriend)$/.test(msg.Content)){
+        // console.log(redisClient.client)
+        redisClient.client.hmget('remarkToUser', 'N', function(err, res){
+          console.log(1, res)
+        })
+      }
+
+      if(/^(startServer)$/.test(msg.Content)){
+        console.log("start server")
       }
       break
     case bot.CONF.MSGTYPE_APP:
-      console.log(msg.MsgType, msg.FileName)
+      // console.log(msg.MsgType, msg.FileName)
       switch(msg.AppMsgType){
         case bot.CONF.APPMSGTYPE_URL:
-          uploadService.postUserInsert({
+          uploadService.postUserInsert(userId, {
             Type: 0,
             Url: msg.Url,
             Text: msg.Content,
@@ -263,10 +287,8 @@ bot.on('message', msg => {
           break;
         case bot.CONF.APPMSGTYPE_ATTACH:
           bot.getDoc(msg.FromUserName, msg.MediaId, msg.FileName).then(res => {
-            // fs.writeFileSync(`./media/${msg.FileName}`, res.data)
-
-            uploadService.getFolder().then(resp => {
-                console.log('保存到的文件夹信息', resp);
+            uploadService.getFolder(userId).then(resp => {
+                // console.log('保存到的文件夹信息', resp);
                 let data = resp.data;
                 let treeId = data.TreeId,
                   folderId = data.FolderId;
@@ -288,7 +310,7 @@ bot.on('message', msg => {
                 })
                 .catch(err => { console.log('err ', err) })
               })
-            console.log(res.type);
+            // console.log(res.type);
           }).catch(err => {
             bot.emit('error', err)
           })
@@ -301,20 +323,17 @@ bot.on('message', msg => {
       /**
        * 图片消息
        */
-      console.log('图片消息，保存到本地')
+      console.log('图片消息')
       bot.getMsgImg(msg.MsgId).then(res => {
-        // fs.writeFileSync(`./media/${msg.MsgId}.jpg`, res.data);
-        // console.log(res.data);
-
-        uploadService.getFolder().then(resp => {
-          console.log('保存到的文件夹信息', resp);
+        uploadService.getFolder(userId).then(resp => {
+          // console.log('保存到的文件夹信息', resp.data);
           let data = resp.data;
           let treeId = data.TreeId,
             folderId = data.FolderId;
 
           uploadService.postUploadFile({
             opt: {
-              userId: bot.contacts[msg.FromUserName].getDisplayName(),
+              userId,
               treeId: treeId,
               folderId: folderId,
               fileName: `${msg.MsgId}.jpg`,
@@ -339,12 +358,10 @@ bot.on('message', msg => {
       /**
        * 语音消息
        */
-      console.log('语音消息，保存到本地')
+      console.log('语音消息')
       bot.getVoice(msg.MsgId).then(res => {
-        // fs.writeFileSync(`./media/${msg.MsgId}.mp3`, res.data)
-
-        uploadService.getFolder().then(resp => {
-          console.log('保存到的文件夹信息', resp);
+        uploadService.getFolder(userId).then(resp => {
+          // console.log('保存到的文件夹信息', resp);
           let data = resp.data;
           let treeId = data.TreeId,
             folderId = data.FolderId;
@@ -375,7 +392,7 @@ bot.on('message', msg => {
       /**
        * 表情消息
        */
-      console.log('表情消息，保存到本地')
+      console.log('表情消息')
       bot.getMsgImg(msg.MsgId).then(res => {
         // fs.writeFileSync(`./media/${msg.MsgId}.gif`, res.data)
       }).catch(err => {
@@ -391,8 +408,8 @@ bot.on('message', msg => {
       bot.getVideo(msg.MsgId).then(res => {
         // fs.writeFileSync(`./media/${msg.MsgId}.mp4`, res.data);
 
-        uploadService.getFolder().then(resp => {
-          console.log('保存到的文件夹信息', resp);
+        uploadService.getFolder(userId).then(resp => {
+          // console.log('保存到的文件夹信息', resp);
           let data = resp.data;
           let treeId = data.TreeId,
             folderId = data.FolderId;
@@ -419,20 +436,6 @@ bot.on('message', msg => {
         bot.emit('error', err)
       })
       break
-    // case bot.CONF.MSGTYPE_APP:
-    //   if (msg.AppMsgType == 6) {
-    //     /**
-    //      * 文件消息
-    //      */
-    //     console.log('文件消息，保存到本地')
-    //     bot.getDoc(msg.FromUserName, msg.MediaId, msg.FileName).then(res => {
-    //       fs.writeFileSync(`./media/${msg.FileName}`, res.data)
-    //       console.log(res.type);
-    //     }).catch(err => {
-    //       bot.emit('error', err)
-    //     })
-    //   }
-    //   break
     default:
       break
   }
@@ -471,18 +474,17 @@ bot.on('message', msg => {
   if (msg.MsgType === bot.CONF.MSGTYPE_VERIFYMSG) {
     bot.verifyUser(msg.RecommendInfo.UserName, msg.RecommendInfo.Ticket)
       .then(res => {
-        console.log(`通过了 ${bot.Contact.getDisplayName(msg.RecommendInfo)} 好友请求`);
+        console.log(`通过了 ${bot.Contact.getDisplayName(msg.RecommendInfo)} ${msg.RecommendInfo.UserName} 好友请求`);
 
         //发送唯一认证链接
-        console.log('msg.RecommendInfo.UserName ===== ', msg.RecommendInfo.UserName);
+        // console.log('msg.RecommendInfo.UserName ===== ', msg.RecommendInfo.UserName);
 
         redisClient.redis_sismember('userList', bot.Contact.getDisplayName(msg.RecommendInfo))
           .then(resp => {
-            console.log('redis_sismember userList', resp);
+            // console.log('redis_sismember userList', resp);
             if (!resp) {
-              console.log('没找到')
               let remarkName = authService.createRemarkName();
-              console.log('remarkName ', remarkName);
+              console.log('新备注名remarkName ', remarkName);
 
               bot.updateRemarkName(msg.RecommendInfo.UserName, remarkName)
                 .then(() => {
@@ -519,12 +521,12 @@ bot.on('message', msg => {
 /**
  * 如何获取联系人头像
  */
-bot.on('message', msg => {
+/* bot.on('message', msg => {
   bot.getHeadImg(bot.contacts[msg.FromUserName].HeadImgUrl).then(res => {
     // fs.writeFileSync(`./media/${msg.FromUserName}.jpg`, res.data)
   }).catch(err => {
     bot.emit('error', err)
   })
-})
+}) */
 
 

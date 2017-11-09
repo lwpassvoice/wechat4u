@@ -24,7 +24,7 @@ request.interceptors.request.use(
       }
     }) */
     // .then(() => {return config})
-    console.log("Authorization", authKey,1);
+    console.log("Authorization:", authKey);
     config.headers['Authorization'] = 'Auth ' + authKey;
     return config
   },
@@ -81,7 +81,7 @@ function getAuthKey(options){
       url: getApi(api.get_authKey(options))
     })
     .then(res => {
-      console.log('AuthKey ', res)
+      console.log('AuthKey ', res.data)
       if(res.data['AuthKey']){
         resolve(res.data['AuthKey'])
       }else{
@@ -103,15 +103,15 @@ function getSessionKey(options){
         url: getApi(api.get_sessionKey(options))
       })
       .then(res => {
-        console.log("SessionKey", res)
+        console.log("SessionKey", res.data)
         if(res.data['SessionKey']){
           resolve(res.data['SessionKey'])
         }else{
-          reject()
+          reject(res.data)
         }
       })
       .catch(err => {
-        console.log(err)
+        console.log('get_sessionKey ', err)
         reject(err)
       })
     })

@@ -10,7 +10,7 @@ function redis_set(key, value, expire) {
         console.log("err:", err);
         reject(err)
       } else {
-        console.log(response);
+        // console.log(response);
         if (expire) {
           client.expire(key, expire)
         }
@@ -27,7 +27,7 @@ function redis_get(key) {
         console.log("err:", err);
         reject(err)
       } else {
-        console.log(response);
+        // console.log(response);
         resolve(response)
       }
     });
@@ -41,7 +41,7 @@ function redis_hmset(key, value, expire) {
         console.log("err:", err);
         reject(err)
       } else {
-        console.log(response);
+        // console.log(response);
         if (expire) {
           client.expire(key, expire)
         }
@@ -59,7 +59,7 @@ function redis_hgetall(key) {
         console.log("err:", err);
         reject(err)
       } else {
-        console.log('redis_hgetall ', response);
+        // console.log('redis_hgetall ', response);
         resolve(response)
       }
     });
@@ -73,7 +73,7 @@ function redis_lpush(key, value) {
         console.log("lpush err:", err);
         reject(err)
       } else {
-        console.log("lpush ", response);
+        // console.log("lpush ", response);
         resolve(response)
       }
     });
@@ -87,7 +87,7 @@ function redis_sadd(key, value) {
         console.log("redis_sadd err:", err);
         reject(err)
       } else {
-        console.log("redis_sadd ", response);
+        // console.log("redis_sadd ", response);
         resolve(response)
       }
     });
@@ -103,7 +103,7 @@ function redis_sismember(key, value) {
           console.log("redis_sismember err:", err);
           reject(err)
         } else {
-          console.log("redis_sismember ", response);
+          // console.log("redis_sismember ", response);
           resolve(response[0])
         }
       });
@@ -112,6 +112,7 @@ function redis_sismember(key, value) {
 
 
 module.exports = {
+  client,
   redis_set,
   redis_get,
   redis_hmset,

@@ -1,3 +1,6 @@
+import debug from 'debug'
+import { log } from 'util';
+
 const axios = require('axios')
 
 const getApi = require('./config').getApi
@@ -36,7 +39,7 @@ request.interceptors.request.use(
     }) */
     // .then(() => {return config})
     config.headers['Authorization'] = "SessionKey " + sessionKey;
-    console.log('global.userName config', config, global.userName)
+    // console.log('global.userName config', config, global.userName)
     return config
   },
   (error) => {
@@ -44,22 +47,23 @@ request.interceptors.request.use(
   }
 )
 
-function checkSessionKey(){
-  console.log('checkSessionKey...')
+function checkSessionKey(userId){
+  log('checkSessionKey...', userId)
+  debug('checkSessionKey...', userId)
+  console.log('checkSessionKey...', userId)
   return new Promise((resolve, reject) => {
-    redisClient.redis_hgetall(global.userName)
+    redisClient.redis_hgetall(userId)
     .then(res => {
-      console.log('res', res)
-      if(!res || !res['SessionKey']){
-        console.log('no sessionkey')
+      console.log('isHasSessionKey', res)
+      if(!res || !res['sessionKey']){
         getSessionKey({
           wxTypeId: 4,
-          userName: global.userName //'cd74cdb0-c2b6-11e7-9ce4-793c1af45c49'
+          userName: userId
         })
         .then(key => {
           console.log('sessionkey', key)
-          redisClient.redis_hmset(global.userName, {
-            userName: global.userName,
+          redisClient.redis_hmset(userId, {
+            userName: userId,
             sessionKey: key
           }, 100000) //最长108000s
           sessionKey = key;
@@ -69,26 +73,26 @@ function checkSessionKey(){
           reject(err)
         })
       }else{
-        sessionKey = res;
+        sessionKey = res.sessionKey;
         resolve()
       }
     })
   })
 }
 
-function getFolder(type = 10){
+function getFolder(userId, type = 10){
   return new Promise((resolve, reject) => {
-    checkSessionKey().then(() => {
+    checkSessionKey(userId).then(() => {
       request({
         method: 'GET',
         url: getApi(api.get_filesFolder(type))
       })
       .then(res => {
-        console.log(res)
+        console.log('get_filesFolder', res.data)
         resolve(res)
       })
       .catch(err => {
-        console.log(err)
+        console.log('get_filesFolder', err)
         reject(err)
       })      
     })
@@ -96,36 +100,36 @@ function getFolder(type = 10){
 }
 
 function postUploadFile(options){
-  console.log('upload config ', options.opt);
+  // console.log('upload config ', options.opt);
   return new Promise((resolve, reject) => {
-    checkSessionKey().then(() => {
+    // checkSessionKey().then(() => {
       request({
         method: 'POST',
         url: getApi(api.post_fileUploadRobotFile(options.opt)),
         data: options.data
       })
       .then(res => {
-        console.log('res', res);
+        console.log('post_fileUploadRobotFile:', res.data);
         resolve(res)
       })
       .catch(err => {
         console.log('post_fileUploadRobotFile fail ', err)
         reject(err)
       })
-    })
+    // })
   })
 }
 
-function postUserInsert(data){
+function postUserInsert(userId, data){
   return new Promise((resolve, reject) => {
-    checkSessionKey().then(() => {
+    checkSessionKey(userId).then(() => {
       request({
         method: "POST",
         url: getApi(api.post_userInsert()),
         data
       })
       .then(res => {
-        console.log('res', res);
+        console.log('postUserInsert', res.data);
         resolve(res)
       })
       .catch(err => {
