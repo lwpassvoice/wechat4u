@@ -22,6 +22,7 @@ try {
 } catch (e) {
   bot = new Wechat()
 }
+
 /**
  * 启动机器人
  */
@@ -233,7 +234,6 @@ bot.on('message', msg => {
       /**
        * 文本消息
        */
-      // console.log(msg.Content);
       if(/^(http)/.test(msg.Content)){
         uploadService.postUserInsert(userId, {
           Type: 0,
@@ -247,30 +247,8 @@ bot.on('message', msg => {
           bot.sendMsg("链接保存成功！", msg.FromUserName)
         })
       }
-
-      if(/^(testFind)$/.test(msg.Content)){
-        console.log('testFind', bot.friendList);
-/*         redisClient.redis_hmset('friendList', bot.friendList).then(res => {
-          redisClient.redis_sismember()
-        }) */
-        for(let friend of bot.friendList){
-          redisClient.client.hmset('remarkToUser', friend.nickname, friend.username)
-        }
-      }
-
-      if(/^(getfriend)$/.test(msg.Content)){
-        // console.log(redisClient.client)
-        redisClient.client.hmget('remarkToUser', 'N', function(err, res){
-          console.log(1, res)
-        })
-      }
-
-      if(/^(startServer)$/.test(msg.Content)){
-        console.log("start server")
-      }
       break
     case bot.CONF.MSGTYPE_APP:
-      // console.log(msg.MsgType, msg.FileName)
       switch(msg.AppMsgType){
         case bot.CONF.APPMSGTYPE_URL:
           uploadService.postUserInsert(userId, {
@@ -529,4 +507,4 @@ bot.on('message', msg => {
   })
 }) */
 
-
+module.exports = bot

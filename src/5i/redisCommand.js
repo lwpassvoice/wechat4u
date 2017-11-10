@@ -51,6 +51,19 @@ function redis_hmset(key, value, expire) {
   })
 }
 
+function redis_hmget(hash, key) {
+  return new Promise((resolve, reject) => {
+    client.hmget(hash, key, function (err, response) {
+      if (err) {
+        console.log("err:", err);
+        reject(err)
+      } else {
+        resolve(response)
+      }
+    });
+  })
+}
+
 function redis_hgetall(key) {
   console.log('redis_hgetall', key)
   return new Promise((resolve, reject) => {
@@ -116,6 +129,7 @@ module.exports = {
   redis_set,
   redis_get,
   redis_hmset,
+  redis_hmget,
   redis_hgetall,
   redis_lpush,
   redis_sadd,
